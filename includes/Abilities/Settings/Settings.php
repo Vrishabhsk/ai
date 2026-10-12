@@ -109,6 +109,9 @@ final class Settings {
 	 */
 	public function register(): void {
 		/*
+		 * Plugin: core does this in _wp_register_initial_settings_for_abilities(), hooked on
+		 * `wp_abilities_api_init` at priority 1.
+		 *
 		 * Core's initial settings register on `rest_api_init`, which fires lazily and
 		 * independently of `wp_abilities_api_init`: on cron, WP-CLI, or any request where
 		 * abilities are used before the REST server loads, it may not have fired — or may
