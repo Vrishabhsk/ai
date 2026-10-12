@@ -78,7 +78,7 @@ final class Settings {
 	 * Settings exposed through the Abilities API, computed once at registration.
 	 *
 	 * @since 1.1.0
-	 * @var array<string, array{option: string, group: string, schema: array<string, mixed>}>
+	 * @var array<string, array{option: string, group: string, default: mixed, schema: array<string, mixed>}>
 	 */
 	private $exposed_settings = array();
 
@@ -261,7 +261,7 @@ final class Settings {
 	 *
 	 * @since 1.1.0
 	 * @since x.x.x Sanitizes values against their schema, and leaves out a value the schema rejects
-	 *              before or after sanitizing.
+	 *              before or after sanitizing, and a setting that was never saved and has no default.
 	 *
 	 * @param mixed $input Optional. The ability input. Default empty array.
 	 * @return array<string, mixed> Map of exposed setting name to current value.
@@ -280,7 +280,15 @@ final class Settings {
 				continue;
 			}
 
-			$value = get_option( $setting['option'] );
+			/*
+			 * As the settings endpoint does, read a setting that was never saved as its registered
+			 * default, or leave it out when it has none: get_option() would return false, which a
+			 * boolean schema accepts as a value and an array schema reads as an empty list.
+			 */
+			$value = get_option( $setting['option'], $setting['default'] );
+			if ( null === $value ) {
+				continue;
+			}
 
 			// WordPress stores false as '', which the boolean schema rejects.
 			if ( '' === $value && 'boolean' === $setting['schema']['type'] ) {
@@ -542,7 +550,7 @@ final class Settings {
 	 * Reads {@see get_registered_settings()} and keeps only settings flagged with a truthy
 	 * `show_in_abilities` argument, of a type the settings endpoint supports. Each entry is
 	 * keyed by its exposed name and carries the underlying option name, the settings group,
-	 * and a JSON Schema describing the value.
+	 * the registered default (null when there is none), and a JSON Schema describing the value.
 	 *
 	 * Two settings exposed under the same name trigger a notice, and the later one is exposed.
 	 *
@@ -551,7 +559,7 @@ final class Settings {
 	 *              exposes a setting flagged with `true` as the REST API does, and warns when
 	 *              two settings share a name.
 	 *
-	 * @return array<string, array{option: string, group: string, schema: array<string, mixed>}> Settings keyed by exposed name.
+	 * @return array<string, array{option: string, group: string, default: mixed, schema: array<string, mixed>}> Settings keyed by exposed name.
 	 */
 	private function get_exposed_settings(): array {
 		$settings = array();
@@ -589,9 +597,10 @@ final class Settings {
 			}
 
 			$settings[ $exposed_name ] = array(
-				'option' => $option_name,
-				'group'  => $args['group'] ?? '',
-				'schema' => $schema,
+				'option'  => $option_name,
+				'group'   => $args['group'] ?? '',
+				'default' => $args['default'] ?? null,
+				'schema'  => $schema,
 			);
 		}
 
@@ -659,7 +668,7 @@ final class Settings {
 	 *
 	 * @since x.x.x
 	 *
-	 * @param array{option: string, group: string, schema: array<string, mixed>} $setting The exposed setting.
+	 * @param array{option: string, group: string, default: mixed, schema: array<string, mixed>} $setting The exposed setting.
 	 * @return array<string, mixed> The JSON Schema for the new value.
 	 */
 	private function update_value_schema( array $setting ): array {

@@ -647,6 +647,56 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A setting that was never saved reads as its registered default, or is left out when it has
+	 * none, as the settings endpoint answers null for it, instead of reading the false that
+	 * get_option() returns as a value.
+	 *
+	 * @since x.x.x
+	 *
+	 * @dataProvider data_never_saved_settings
+	 *
+	 * @param array<string, mixed> $args     The setting registration arguments.
+	 * @param string|null          $expected The value as JSON, or null when it is left out.
+	 */
+	public function test_core_settings_get_reads_a_setting_that_was_never_saved( array $args, ?string $expected ): void {
+		$option = 'core_settings_get_ability_never_saved_test_option';
+
+		register_setting( 'general', $option, $args + array( 'show_in_abilities' => true ) );
+
+		try {
+			$this->become_admin();
+			$this->register_ability();
+
+			$result = wp_get_ability( 'core/settings-get' )->execute( array( 'fields' => array( $option ) ) );
+		} finally {
+			unregister_setting( 'general', $option );
+		}
+
+		$this->assertSame( $expected, isset( $result[ $option ] ) ? wp_json_encode( $result[ $option ] ) : null );
+	}
+
+	/**
+	 * Registration arguments, and the JSON `core/settings-get` reads a never saved setting as.
+	 *
+	 * @since x.x.x
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: string|null}> Data sets keyed by description.
+	 */
+	public function data_never_saved_settings(): array {
+		return array(
+			'a boolean without a default'       => array( array( 'type' => 'boolean' ), null ),
+			'an array without a default'        => array( array( 'type' => 'array' ), null ),
+			'a boolean with a default of false' => array(
+				array(
+					'type'    => 'boolean',
+					'default' => false,
+				),
+				'false',
+			),
+		);
+	}
+
+	/**
 	 * A setting of a type the settings endpoint does not support is not exposed.
 	 *
 	 * @since x.x.x
