@@ -25,8 +25,8 @@ defined( 'ABSPATH' ) || exit;
  * flat map of setting name to value. Only settings flagged with `show_in_abilities` are
  * exposed.
  *
- * Unlike the other core abilities, which are self-contained closures registered directly
- * in wp_register_core_abilities(), the settings abilities live in a dedicated class
+ * Unlike the core abilities registered directly in wp_register_core_abilities() as
+ * self-contained closures, the settings abilities live in a dedicated class
  * because they share state: the set of exposed settings is computed once at registration
  * and reused by the input schema, the output schema, and the execute callback, and the
  * same helpers are shared with `core/settings-update`.
