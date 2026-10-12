@@ -299,6 +299,42 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Two settings exposed under the same name trigger a notice, and the later one is exposed.
+	 *
+	 * @since x.x.x
+	 *
+	 * @expectedIncorrectUsage WordPress\AI\Abilities\Settings\Settings::get_exposed_settings
+	 */
+	public function test_core_settings_get_warns_about_a_duplicate_exposed_name(): void {
+		register_setting(
+			'general',
+			'core_settings_get_ability_duplicate_test_option_a',
+			array(
+				'type'              => 'string',
+				'show_in_abilities' => array( 'name' => 'core_settings_get_ability_duplicate_name' ),
+			)
+		);
+		register_setting(
+			'general',
+			'core_settings_get_ability_duplicate_test_option_b',
+			array(
+				'type'              => 'integer',
+				'show_in_abilities' => array( 'name' => 'core_settings_get_ability_duplicate_name' ),
+			)
+		);
+
+		try {
+			$this->register_ability();
+			$properties = wp_get_ability( 'core/settings-get' )->get_output_schema()['properties'];
+
+			$this->assertSame( 'integer', $properties['core_settings_get_ability_duplicate_name']['type'] );
+		} finally {
+			unregister_setting( 'general', 'core_settings_get_ability_duplicate_test_option_a' );
+			unregister_setting( 'general', 'core_settings_get_ability_duplicate_test_option_b' );
+		}
+	}
+
+	/**
 	 * When core already provides core/settings-get, the plugin's version replaces it.
 	 *
 	 * @since 1.1.0

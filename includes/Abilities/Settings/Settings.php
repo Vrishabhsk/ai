@@ -544,9 +544,12 @@ final class Settings {
 	 * keyed by its exposed name and carries the underlying option name, the settings group,
 	 * and a JSON Schema describing the value.
 	 *
+	 * Two settings exposed under the same name trigger a notice, and the later one is exposed.
+	 *
 	 * @since 1.1.0
-	 * @since x.x.x Leaves out settings of a type the settings endpoint does not support, and
-	 *              exposes a setting flagged with `true` as the REST API does.
+	 * @since x.x.x Leaves out settings of a type the settings endpoint does not support,
+	 *              exposes a setting flagged with `true` as the REST API does, and warns when
+	 *              two settings share a name.
 	 *
 	 * @return array<string, array{option: string, group: string, schema: array<string, mixed>}> Settings keyed by exposed name.
 	 */
@@ -567,8 +570,25 @@ final class Settings {
 
 			$option_name = (string) $option_name;
 
-			// Plugin: a name that is not a string falls back to the option name, where core fails on it as an array key.
-			$settings[ empty( $show['name'] ) || ! is_string( $show['name'] ) ? $option_name : $show['name'] ] = array(
+			// Plugin: a name that is not a string falls back to the option name, where core casts it to a string.
+			$exposed_name = empty( $show['name'] ) || ! is_string( $show['name'] ) ? $option_name : $show['name'];
+
+			if ( isset( $settings[ $exposed_name ] ) ) {
+				_doing_it_wrong(
+					__METHOD__,
+					sprintf(
+						// Plugin: escaped with esc_html__(), as the plugin's coding standards require, where core uses __().
+						/* translators: 1: Option name, 2: Setting name exposed to abilities, 3: Option name. */
+						esc_html__( 'The "%1$s" setting is exposed to abilities as "%2$s", a name already used by the "%3$s" setting, which is no longer exposed.', 'ai' ),
+						esc_html( $option_name ),
+						esc_html( $exposed_name ),
+						esc_html( $settings[ $exposed_name ]['option'] )
+					),
+					'x.x.x'
+				);
+			}
+
+			$settings[ $exposed_name ] = array(
 				'option' => $option_name,
 				'group'  => $args['group'] ?? '',
 				'schema' => $schema,
