@@ -416,6 +416,117 @@ class AI_Request_Log_Repository {
 	}
 
 	/**
+	 * Retrieves a page of raw log rows recorded for a user, oldest first.
+	 *
+	 * Unlike query(), the rows include the stored request and response
+	 * previews, which personal data exports need.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param int $user_id  The user ID.
+	 * @param int $per_page Rows per page.
+	 * @param int $page     Page number, starting at 1.
+	 * @return list<array<string, mixed>> Log rows.
+	 */
+	public function get_by_user( int $user_id, int $per_page = 100, int $page = 1 ): array {
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		global $wpdb;
+
+		$table_name = $this->schema->get_table_name();
+		$per_page   = max( 1, $per_page );
+		$offset     = ( max( 1, $page ) - 1 ) * $per_page;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT log_id, timestamp, type, operation, provider, model, status, tokens_input, tokens_output, tokens_total, error_message, request_preview, response_preview FROM {$table_name} WHERE user_id = %d ORDER BY id ASC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		return ( $rows ? $rows : array() );
+	}
+
+	/**
+	 * Counts the log rows recorded for a user.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param int $user_id The user ID.
+	 * @return int Number of rows.
+	 */
+	public function count_by_user( int $user_id ): int {
+		if ( $user_id <= 0 ) {
+			return 0;
+		}
+
+		global $wpdb;
+
+		$table_name = $this->schema->get_table_name();
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
+			)
+		);
+	}
+
+	/**
+	 * Deletes the log rows recorded for a user, in batches.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param int $user_id  The user ID.
+	 * @param int $max_rows Maximum number of rows to delete, or 0 for no limit.
+	 * @return int|false Number of rows deleted, or false if a query failed.
+	 */
+	public function delete_by_user( int $user_id, int $max_rows = 0 ) {
+		if ( $user_id <= 0 ) {
+			return 0;
+		}
+
+		global $wpdb;
+
+		$table_name    = $this->schema->get_table_name();
+		$total_deleted = 0;
+		$failed        = false;
+
+		do {
+			$batch_size = self::DELETE_BATCH_SIZE;
+			if ( $max_rows > 0 ) {
+				$batch_size = min( $batch_size, $max_rows - $total_deleted );
+			}
+
+			$deleted = $wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$table_name} WHERE user_id = %d LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$user_id,
+					$batch_size
+				)
+			);
+
+			if ( false === $deleted ) {
+				$failed = true;
+				break;
+			}
+
+			$total_deleted += (int) $deleted;
+		} while ( (int) $deleted >= $batch_size && ( $max_rows <= 0 || $total_deleted < $max_rows ) );
+
+		if ( $total_deleted > 0 ) {
+			$this->invalidate_caches();
+		}
+
+		return $failed && 0 === $total_deleted ? false : $total_deleted;
+	}
+
+	/**
 	 * Invalidates all caches.
 	 *
 	 * @since 1.0.0

@@ -115,6 +115,10 @@ This plugin brings AI-powered writing and editing tools directly into WordPress.
 
 This is an experimental plugin, so we recommend testing in a staging environment first. Features may change as we gather community feedback. All AI features are opt-in and require manual triggering - nothing happens automatically without your approval.
 
+= What data does the plugin send to AI providers, and does it support privacy requests? =
+
+Experiments and features send content to the AI provider(s) configured under `Settings -> Connectors` only once they are enabled. Some run when you ask for a suggestion; others, such as Comment Moderation and Type-ahead, run automatically. The plugin adds suggested text to `Settings -> Privacy -> Policy Guide`, and registers a personal data exporter and eraser for AI request logs under `Tools -> Export Personal Data` and `Tools -> Erase Personal Data`. See the [privacy documentation](https://github.com/WordPress/ai/blob/develop/docs/PRIVACY.md) for what each experiment sends.
+
 = Which AI providers are supported? =
 
 The plugin can work with provider connector plugins from [Anthropic](https://wordpress.org/plugins/ai-provider-for-anthropic) (Claude), [Google](https://wordpress.org/plugins/ai-provider-for-google) (Gemini), [OpenAI](https://wordpress.org/plugins/ai-provider-for-openai), and [others](https://wordpress.org/plugins/tags/connector/). Install and activate the relevant connector plugin, then configure it in `Settings -> Connectors`.
