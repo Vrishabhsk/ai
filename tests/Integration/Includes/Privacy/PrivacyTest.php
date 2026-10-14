@@ -173,9 +173,12 @@ class PrivacyTest extends WP_UnitTestCase {
 	public function test_policy_content_structure(): void {
 		$content = ( new Privacy() )->get_privacy_policy_content();
 
+		// Some WordPress versions return `&rarr;` from kses as the literal character, so compare decoded text.
+		$text = html_entity_decode( $content, ENT_QUOTES, 'UTF-8' );
+
 		$this->assertStringContainsString( 'class="privacy-policy-tutorial"', $content );
-		$this->assertStringContainsString( 'Settings &rarr; Connectors', $content );
-		$this->assertStringContainsString( 'Tools &rarr; AI Request Logs', $content );
+		$this->assertStringContainsString( 'Settings → Connectors', $text );
+		$this->assertStringContainsString( 'Tools → AI Request Logs', $text );
 		$this->assertStringContainsString( 'wpai_request_log_retention_days', $content );
 		$this->assertSame( wp_kses_post( $content ), $content );
 	}
