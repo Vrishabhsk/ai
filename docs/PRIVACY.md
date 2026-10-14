@@ -52,7 +52,7 @@ When the AI Request Logging experiment is enabled, each AI request is stored in 
 
 Because prompts can contain comments, post content and author names, the previews can contain personal data about people other than the user who made the request.
 
-Logs are kept indefinitely by default. To delete old entries automatically, return a number of days from the `wpai_request_log_retention_days` filter. Administrators can delete all logs from Tools → AI Request Logs. Uninstalling the plugin drops the table.
+Logs are kept indefinitely by default. To delete old entries automatically, return a number of days from the `wpai_request_log_retention_days` filter. Administrators can also delete logs older than 30 days, 90 days or 1 year, or all logs, from the Manage Logs panel in Tools → AI Request Logs. That is a one-off action and does not set a retention period. Uninstalling the plugin drops the table.
 
 ## Personal data export and erasure
 
@@ -66,7 +66,7 @@ The plugin registers an exporter and an eraser named "AI Request Logs" for Tools
 
 ### Rows that cannot be matched
 
-Rows recorded with no logged-in user have `user_id` `0` and cannot be matched to an email address. The most common case is Comment Moderation checking a guest comment. These rows are not exported or erased by the privacy tools. They are removed when the logs are purged or reach the retention period. A guest's name and comment text can still appear in the previews of rows like these, and in rows linked to a moderator who used Suggest Reply on that comment.
+Rows recorded with no logged-in user have `user_id` `0` and cannot be matched to an email address. The most common case is Comment Moderation checking a guest comment. These rows are not exported or erased by the privacy tools. They are removed when an administrator deletes them from Tools → AI Request Logs, or when they reach the retention period. A guest's name and comment text can still appear in the previews of rows like these, and in rows linked to a moderator who used Suggest Reply on that comment.
 
 ## Data stored with posts and comments
 

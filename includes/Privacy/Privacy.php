@@ -77,7 +77,7 @@ class Privacy {
 		$content .= '<p class="privacy-policy-tutorial">' . __( 'Applies only when the AI Request Logging experiment is enabled, or while logs recorded before it was disabled remain.', 'ai' ) . '</p>';
 		$content .= '<p class="privacy-policy-tutorial">' . sprintf(
 			/* translators: %s: name of the retention filter. */
-			__( 'Logs are kept indefinitely unless a retention period is set with the %s filter. Administrators can delete all logs from Tools &rarr; AI Request Logs. If you set a retention period, state it in your policy.', 'ai' ),
+			__( 'Logs are kept indefinitely unless a retention period is set with the %s filter. Administrators can delete older logs, or all logs, from Tools &rarr; AI Request Logs. If you set a retention period, state it in your policy.', 'ai' ),
 			'<code>wpai_request_log_retention_days</code>'
 		) . '</p>';
 		$content .= '<p>' . $suggested . sprintf(
