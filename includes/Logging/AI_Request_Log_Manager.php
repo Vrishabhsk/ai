@@ -336,10 +336,6 @@ class AI_Request_Log_Manager {
 	/**
 	 * Deletes logs older than the given number of days.
 	 *
-	 * This is a one-off, user-initiated cleanup and is independent of the
-	 * retention period used by the scheduled cleanup. A value of 0 or less
-	 * deletes all logs.
-	 *
 	 * @since x.x.x
 	 *
 	 * @param int $days Delete logs older than this many days, or 0 to delete all logs.

@@ -234,9 +234,6 @@ class AI_Request_Log_Controller extends WP_REST_Controller {
 	/**
 	 * Deletes logs.
 	 *
-	 * Deletes all logs by default. When `before_days` is a positive integer,
-	 * only logs older than that many days are deleted.
-	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response
 	 */
