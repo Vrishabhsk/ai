@@ -12,12 +12,12 @@ export interface FeatureUsage {
 
 interface FeatureLabelProps {
 	label: string;
-	stability?: string;
+	stability?: string | undefined;
 }
 
 interface FeatureHelpProps {
-	description?: string;
-	usage?: FeatureUsage | null;
+	description?: React.ReactNode;
+	usage?: FeatureUsage | null | undefined;
 }
 
 /**
@@ -59,7 +59,7 @@ export function FeatureLabel( {
  * and how many requests it makes.
  *
  * @param {FeatureHelpProps} props             The component props.
- * @param {string}           props.description The feature description.
+ * @param {React.ReactNode}  props.description The feature description.
  * @param {FeatureUsage}     props.usage       The feature usage metadata.
  * @return {React.JSX.Element} The help text.
  */
