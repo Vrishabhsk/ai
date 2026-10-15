@@ -141,9 +141,9 @@ class Request_Log_Personal_Data {
 	 *
 	 * @param string $email_address The email address of the data subject.
 	 * @param int    $page          The page of results, starting at 1.
-	 * @return array{data: list<array{group_id: string, group_label: string, group_description: string, item_id: string, data: list<array{name: string, value: string}>}>, done: bool} Export data.
+	 * @return array{data: list<array{group_id: string, group_label: string, group_description: string, item_id: string, data: list<array{name: string, value: string}>}>, done: bool}|\WP_Error Export data, or an error if the logs could not be read.
 	 */
-	public function export( $email_address, $page = 1 ): array {
+	public function export( $email_address, $page = 1 ) {
 		$user_id = $this->get_user_id( (string) $email_address );
 
 		if ( 0 === $user_id ) {
@@ -153,7 +153,12 @@ class Request_Log_Personal_Data {
 			);
 		}
 
-		$rows  = $this->repository->get_by_user( $user_id, self::EXPORT_PER_PAGE, max( 1, (int) $page ) );
+		$rows = $this->repository->get_by_user( $user_id, self::EXPORT_PER_PAGE, max( 1, (int) $page ) );
+
+		if ( is_wp_error( $rows ) ) {
+			return $rows;
+		}
+
 		$items = array();
 
 		foreach ( $rows as $row ) {
@@ -179,9 +184,9 @@ class Request_Log_Personal_Data {
 	 *
 	 * @param string $email_address The email address of the data subject.
 	 * @param int    $page          The page of the erasure, starting at 1. Unused, since erased rows no longer match.
-	 * @return array{items_removed: bool, items_retained: bool, messages: list<string>, done: bool} Erasure result.
+	 * @return array{items_removed: bool, items_retained: bool, messages: list<string>, done: bool}|\WP_Error Erasure result, or an error if the logs could not be changed.
 	 */
-	public function erase( $email_address, $page = 1 ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	public function erase( $email_address, $page = 1 ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		$result = array(
 			'items_removed'  => false,
 			'items_retained' => false,
@@ -195,19 +200,21 @@ class Request_Log_Personal_Data {
 			return $result;
 		}
 
-		$deleted   = $this->repository->delete_by_user( $user_id, self::ERASE_PER_PAGE );
-		$remaining = $this->repository->count_by_user( $user_id );
+		// A failed query is returned as an error, so core reports the request as failed instead of done.
+		$deleted = $this->repository->delete_by_user( $user_id, self::ERASE_PER_PAGE );
 
-		$result['items_removed'] = is_int( $deleted ) && $deleted > 0;
-
-		if ( false === $deleted ) {
-			$result['items_retained'] = $remaining > 0;
-			$result['messages'][]     = __( 'AI request logs could not be removed because of a database error.', 'ai' );
-
-			return $result;
+		if ( is_wp_error( $deleted ) ) {
+			return $deleted;
 		}
 
-		$result['done'] = 0 === $remaining;
+		$remaining = $this->repository->count_by_user( $user_id );
+
+		if ( is_wp_error( $remaining ) ) {
+			return $remaining;
+		}
+
+		$result['items_removed'] = $deleted > 0;
+		$result['done']          = 0 === $remaining;
 
 		return $result;
 	}

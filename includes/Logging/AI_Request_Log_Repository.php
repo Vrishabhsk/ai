@@ -426,9 +426,9 @@ class AI_Request_Log_Repository {
 	 * @param int $user_id  The user ID.
 	 * @param int $per_page Rows per page.
 	 * @param int $page     Page number, starting at 1.
-	 * @return list<array<string, mixed>> Log rows.
+	 * @return list<array<string, mixed>>|\WP_Error Log rows, or an error if the query failed.
 	 */
-	public function get_by_user( int $user_id, int $per_page = 100, int $page = 1 ): array {
+	public function get_by_user( int $user_id, int $per_page = 100, int $page = 1 ) {
 		if ( $user_id <= 0 ) {
 			return array();
 		}
@@ -449,6 +449,10 @@ class AI_Request_Log_Repository {
 			ARRAY_A
 		);
 
+		if ( '' !== $wpdb->last_error ) {
+			return $this->get_query_error();
+		}
+
 		return ( $rows ? $rows : array() );
 	}
 
@@ -458,9 +462,9 @@ class AI_Request_Log_Repository {
 	 * @since x.x.x
 	 *
 	 * @param int $user_id The user ID.
-	 * @return int Number of rows.
+	 * @return int|\WP_Error Number of rows, or an error if the query failed.
 	 */
-	public function count_by_user( int $user_id ): int {
+	public function count_by_user( int $user_id ) {
 		if ( $user_id <= 0 ) {
 			return 0;
 		}
@@ -469,12 +473,18 @@ class AI_Request_Log_Repository {
 
 		$table_name = $this->schema->get_table_name();
 
-		return (int) $wpdb->get_var(
+		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$user_id
 			)
 		);
+
+		if ( '' !== $wpdb->last_error ) {
+			return $this->get_query_error();
+		}
+
+		return (int) $count;
 	}
 
 	/**
@@ -484,7 +494,7 @@ class AI_Request_Log_Repository {
 	 *
 	 * @param int $user_id  The user ID.
 	 * @param int $max_rows Maximum number of rows to delete, or 0 for no limit.
-	 * @return int|false Number of rows deleted, or false if a query failed.
+	 * @return int|\WP_Error Number of rows deleted, or an error if a query failed.
 	 */
 	public function delete_by_user( int $user_id, int $max_rows = 0 ) {
 		if ( $user_id <= 0 ) {
@@ -495,7 +505,7 @@ class AI_Request_Log_Repository {
 
 		$table_name    = $this->schema->get_table_name();
 		$total_deleted = 0;
-		$failed        = false;
+		$error         = null;
 
 		do {
 			$batch_size = self::DELETE_BATCH_SIZE;
@@ -512,7 +522,7 @@ class AI_Request_Log_Repository {
 			);
 
 			if ( false === $deleted ) {
-				$failed = true;
+				$error = $this->get_query_error();
 				break;
 			}
 
@@ -523,7 +533,21 @@ class AI_Request_Log_Repository {
 			$this->invalidate_caches();
 		}
 
-		return $failed && 0 === $total_deleted ? false : $total_deleted;
+		return $error ?? $total_deleted;
+	}
+
+	/**
+	 * Returns the error reported when a request log query fails.
+	 *
+	 * @since x.x.x
+	 *
+	 * @return \WP_Error The error.
+	 */
+	private function get_query_error(): \WP_Error {
+		return new \WP_Error(
+			'wpai_request_log_query_failed',
+			__( 'The AI request logs could not be read or changed because of a database error.', 'ai' )
+		);
 	}
 
 	/**

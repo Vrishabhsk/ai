@@ -46,6 +46,13 @@ class Request_Log_Personal_DataTest extends WP_UnitTestCase {
 	private Request_Log_Personal_Data $personal_data;
 
 	/**
+	 * Filter that makes matching queries fail, if one is active.
+	 *
+	 * @var callable|null
+	 */
+	private $failing_query_filter = null;
+
+	/**
 	 * Set up test case.
 	 *
 	 * @since x.x.x
@@ -73,8 +80,35 @@ class Request_Log_Personal_DataTest extends WP_UnitTestCase {
 	 * @since x.x.x
 	 */
 	protected function tearDown(): void {
+		global $wpdb;
+
+		if ( null !== $this->failing_query_filter ) {
+			remove_filter( 'query', $this->failing_query_filter );
+			$this->failing_query_filter = null;
+		}
+		$wpdb->suppress_errors( false );
+
 		$this->repository->invalidate_caches();
 		parent::tearDown();
+	}
+
+	/**
+	 * Makes the queries that match a pattern fail, as a database error would.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param string $pattern Regular expression matched against each query.
+	 */
+	private function fail_queries_matching( string $pattern ): void {
+		global $wpdb;
+
+		$wpdb->suppress_errors( true );
+
+		$this->failing_query_filter = static function ( $query ) use ( $pattern ) {
+			return preg_match( $pattern, (string) $query ) ? 'SELECT * FROM wpai_table_that_does_not_exist' : $query;
+		};
+
+		add_filter( 'query', $this->failing_query_filter );
 	}
 
 	/**
@@ -328,5 +362,59 @@ class Request_Log_Personal_DataTest extends WP_UnitTestCase {
 		$this->assertSame( 2, $this->repository->count_by_user( $user_a ) );
 		$this->assertSame( 2, $this->repository->delete_by_user( $user_a ) );
 		$this->assertSame( 0, $this->repository->count_by_user( $user_a ) );
+	}
+
+	/**
+	 * Tests that a failed read makes the export fail instead of reporting it done.
+	 *
+	 * @since x.x.x
+	 */
+	public function test_export_returns_error_when_query_fails(): void {
+		$user_a = self::factory()->user->create( array( 'user_email' => 'a@example.com' ) );
+		$this->insert_logs( $user_a, 2, 'user-a' );
+
+		$this->fail_queries_matching( '/^SELECT log_id, /' );
+
+		$export = $this->personal_data->export( 'a@example.com', 1 );
+
+		$this->assertWPError( $export );
+		$this->assertSame( 'wpai_request_log_query_failed', $export->get_error_code() );
+	}
+
+	/**
+	 * Tests that a failed delete makes the erasure fail and leaves the rows in place.
+	 *
+	 * @since x.x.x
+	 */
+	public function test_erase_returns_error_when_delete_fails(): void {
+		$user_a = self::factory()->user->create( array( 'user_email' => 'a@example.com' ) );
+		$this->insert_logs( $user_a, 2, 'user-a' );
+
+		$this->fail_queries_matching( '/^DELETE FROM \\S*wpai_request_logs WHERE user_id/' );
+
+		$erase = $this->personal_data->erase( 'a@example.com', 1 );
+
+		$this->assertWPError( $erase );
+		$this->assertSame( 'wpai_request_log_query_failed', $erase->get_error_code() );
+
+		remove_filter( 'query', $this->failing_query_filter );
+		$this->assertSame( 2, $this->repository->count_by_user( $user_a ) );
+	}
+
+	/**
+	 * Tests that a failed count makes the erasure fail instead of reporting it done.
+	 *
+	 * @since x.x.x
+	 */
+	public function test_erase_returns_error_when_count_fails(): void {
+		$user_a = self::factory()->user->create( array( 'user_email' => 'a@example.com' ) );
+		$this->insert_logs( $user_a, 2, 'user-a' );
+
+		$this->fail_queries_matching( '/^SELECT COUNT\\(\\*\\) FROM \\S*wpai_request_logs WHERE user_id/' );
+
+		$erase = $this->personal_data->erase( 'a@example.com', 1 );
+
+		$this->assertWPError( $erase );
+		$this->assertSame( 'wpai_request_log_query_failed', $erase->get_error_code() );
 	}
 }

@@ -54,6 +54,8 @@ Because prompts can contain comments, post content and author names, the preview
 
 Logs are kept indefinitely by default. To delete old entries automatically, return a number of days from the `wpai_request_log_retention_days` filter. Administrators can also delete logs older than 30 days, 90 days or 1 year, or all logs, from the Manage Logs panel in Tools → AI Request Logs. That is a one-off action and does not set a retention period. Uninstalling the plugin drops the table.
 
+If the AI Request Logging experiment is disabled, the logs already recorded stay in the table. The Tools → AI Request Logs screen and the scheduled retention cleanup only run while the experiment is enabled, so those logs are not deleted until it is enabled again or the plugin is uninstalled. The exporter and eraser below keep working either way.
+
 ## Personal data export and erasure
 
 The plugin registers an exporter and an eraser named "AI Request Logs" for Tools → Export Personal Data and Tools → Erase Personal Data.
@@ -62,11 +64,12 @@ The plugin registers an exporter and an eraser named "AI Request Logs" for Tools
 - The email address in the request is matched to a user account, and rows are found by that account's `user_id`.
 - The exporter returns 100 rows per page, oldest first. Each item has the date (UTC), operation, provider, model, status, token counts, error message (if any), and the request and response previews.
 - The eraser deletes the matching rows in batches of up to 1,000 per page and clears the log caches. It reports `items_removed`, `items_retained`, `messages` and `done` as core expects.
+- If a database query fails, the exporter or eraser returns a `WP_Error`, so core reports the request as failed instead of marking it done.
 - An email address that matches no account returns no data, and nothing is removed.
 
 ### Rows that cannot be matched
 
-Rows recorded with no logged-in user have `user_id` `0` and cannot be matched to an email address. The most common case is Comment Moderation checking a guest comment. These rows are not exported or erased by the privacy tools. They are removed when an administrator deletes them from Tools → AI Request Logs, or when they reach the retention period. A guest's name and comment text can still appear in the previews of rows like these, and in rows linked to a moderator who used Suggest Reply on that comment.
+Rows recorded with no logged-in user have `user_id` `0` and cannot be matched to an email address. The most common case is Comment Moderation checking a guest comment. These rows are not exported or erased by the privacy tools. They are removed when an administrator deletes them from Tools → AI Request Logs, or when they reach the retention period; both need the logging experiment to be enabled. A guest's name and comment text can still appear in the previews of rows like these, and in rows linked to a moderator who used Suggest Reply on that comment.
 
 ## Data stored with posts and comments
 

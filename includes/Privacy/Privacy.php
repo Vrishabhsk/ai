@@ -37,10 +37,6 @@ class Privacy {
 	 * @since x.x.x
 	 */
 	public function add_privacy_policy_content(): void {
-		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
-			return;
-		}
-
 		wp_add_privacy_policy_content( __( 'AI', 'ai' ), $this->get_privacy_policy_content() );
 	}
 
@@ -74,7 +70,7 @@ class Privacy {
 		$content .= '<p>' . $suggested . __( 'Users who write or edit content on this site can use AI tools that send the content they are working on to an AI service to suggest titles, excerpts, summaries, translations, image descriptions, images and other edits. This can include the post title and content, the name of the post&#8217;s author, and images they choose, including any information stored in the image file.', 'ai' ) . '</p>';
 
 		$content .= '<h3 class="wp-block-heading">' . __( 'AI request logs', 'ai' ) . '</h3>';
-		$content .= '<p class="privacy-policy-tutorial">' . __( 'Applies only when the AI Request Logging experiment is enabled, or while logs recorded before it was disabled remain.', 'ai' ) . '</p>';
+		$content .= '<p class="privacy-policy-tutorial">' . __( 'Applies only when the AI Request Logging experiment is enabled, or while logs recorded before it was disabled remain. While the experiment is disabled, those logs are not deleted automatically and cannot be deleted from Tools &rarr; AI Request Logs; enable the experiment again to delete them.', 'ai' ) . '</p>';
 		$content .= '<p class="privacy-policy-tutorial">' . sprintf(
 			/* translators: %s: name of the retention filter. */
 			__( 'Logs are kept indefinitely unless a retention period is set with the %s filter. Administrators can delete older logs, or all logs, from Tools &rarr; AI Request Logs. If you set a retention period, state it in your policy.', 'ai' ),
