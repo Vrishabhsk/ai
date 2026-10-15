@@ -21,6 +21,7 @@ The **Value** score rates how relevant and substantive a comment is to the post 
 **Automatic moderation rule (default):**
 
 - If `toxicity_score >= 0.7` **and** `sentiment === 'negative'`, the comment is set to pending moderation (`comment_approved = '0'`).
+- Only regular comments are analyzed automatically. Pingbacks, trackbacks, and block editor notes (including AI-authored Editorial Notes) are skipped.
 
 ### Input Schema
 
@@ -138,6 +139,18 @@ add_filter( 'wpai_comment_moderation_should_moderate', function( $should_moderat
     }
     return $should_moderate;
 }, 10, 3 );
+```
+
+### Choosing which comment types are moderated
+
+Automatic moderation only runs on regular comments (type `comment`). Use `wpai_comment_moderation_comment_types` to add other types:
+
+```php
+add_filter( 'wpai_comment_moderation_comment_types', function ( array $comment_types ): array {
+    // Also moderate a custom "review" comment type.
+    $comment_types[] = 'review';
+    return $comment_types;
+} );
 ```
 
 ### Controlling which posts supply value-score context
