@@ -128,7 +128,9 @@ test.describe( 'Plugin settings', () => {
 		await visitSettingsPage( admin );
 
 		// Toggle a feature setting to trigger a snackbar.
-		const featureToggle = page.getByLabel( 'Title Generation' );
+		const featureToggle = page.getByRole( 'checkbox', {
+			name: 'Title Generation',
+		} );
 		await expect( featureToggle ).toBeVisible( { timeout: 10000 } );
 		await featureToggle.click();
 
@@ -184,7 +186,9 @@ test.describe( 'Plugin settings', () => {
 		await expect( saveButton ).toBeVisible();
 
 		// Toggle another experiment to trigger auto-save (changes siteSettings).
-		const otherToggle = page.getByLabel( 'Title Generation' );
+		const otherToggle = page.getByRole( 'checkbox', {
+			name: 'Title Generation',
+		} );
 		await otherToggle.click();
 
 		// Wait for the auto-save snackbar to confirm siteSettings changed.
