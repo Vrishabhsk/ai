@@ -14,7 +14,7 @@ When enabled, each comment in the Comments list and the Dashboard Activity widge
 - Injects in-editor controls for regenerating replies with a different Tone (friendly, professional, casual)
 - Uses one shared ability (`ai/suggest-reply`) exposed via REST API
 
-The prompt includes the comment, its author, the requested tone, and, for context, the title and excerpt of the post the comment was left on. The post title and excerpt are only included for publicly readable posts. Password-protected posts and non-public statuses (drafts, private posts) are skipped, so gated editorial content is never sent to the provider.
+The prompt includes the comment, its author, the requested tone, and, for context, the title and excerpt of the post the comment was left on. The post title and excerpt are only included for publicly readable posts. Password-protected posts, non-public statuses (drafts, private posts), and post types that are not publicly viewable are skipped, so gated editorial content is never sent to the provider.
 
 ### Input Schema
 

@@ -429,6 +429,36 @@ class Suggest_ReplyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that get_post_context() returns no context for a post type that is not publicly viewable.
+	 *
+	 * @since x.x.x
+	 */
+	public function test_get_post_context_is_empty_for_non_viewable_post_type() {
+		register_post_type( 'wpai_internal_memo', array( 'public' => false ) );
+
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'wpai_internal_memo',
+				'post_title'   => 'An internal memo',
+				'post_excerpt' => 'An internal excerpt.',
+			)
+		);
+
+		$context = $this->get_post_context( $post_id );
+
+		unregister_post_type( 'wpai_internal_memo' );
+
+		$this->assertSame(
+			array(
+				'title'   => '',
+				'excerpt' => '',
+			),
+			$context,
+			'Content of a post type that is not publicly viewable must not be sent to the provider.'
+		);
+	}
+
+	/**
 	 * Test that the post context gate can be overridden by filter.
 	 *
 	 * @since x.x.x

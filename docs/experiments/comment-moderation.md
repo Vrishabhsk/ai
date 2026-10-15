@@ -8,7 +8,7 @@ The Comment Moderation experiment adds sentiment, toxicity, and value analysis t
 
 When enabled, the Comments list table gets three additional columns: **Sentiment**, **Toxicity**, and **Value**. Each comment can show a badge with the current analysis state or result.
 
-The **Value** score rates how relevant and substantive a comment is to the post it was left on, so moderators can separate genuine contributions from spam, engagement bait, and generic filler. Scoring it needs the post for context, which the ability reads from the post excerpt, then the AI-generated summary (`wpai_generated_summary`), then the post content, in that order. Context is only drawn from publicly readable posts — password-protected posts and non-public statuses (drafts, private posts) are skipped so gated editorial content is never sent to the provider.
+The **Value** score rates how relevant and substantive a comment is to the post it was left on, so moderators can separate genuine contributions from spam, engagement bait, and generic filler. Scoring it needs the post for context, which the ability reads from the post excerpt, then the AI-generated summary (`wpai_generated_summary`), then the post content, in that order. Context is only drawn from publicly readable posts — password-protected posts, non-public statuses (drafts, private posts), and post types that are not publicly viewable are skipped so gated editorial content is never sent to the provider.
 
 **Key Features:**
 

@@ -444,8 +444,8 @@ class Comment_Moderation extends Abstract_Feature {
 		 *
 		 * @since x.x.x
 		 *
-		 * @param string[]    $comment_types Comment types to moderate. Default `array( 'comment' )`.
-		 * @param \WP_Comment $comment       The comment being checked.
+		 * @param list<string> $comment_types Comment types to moderate. Default `array( 'comment' )`.
+		 * @param \WP_Comment  $comment       The comment being checked.
 		 */
 		$comment_types = (array) apply_filters( 'wpai_comment_moderation_comment_types', array( 'comment' ), $comment );
 
