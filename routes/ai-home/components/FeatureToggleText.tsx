@@ -1,7 +1,10 @@
 /**
  * WordPress dependencies
  */
-import { __ } from '@wordpress/i18n';
+import { Button, ExternalLink, Popover } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
+import { info as infoIcon } from '@wordpress/icons';
 
 export interface FeatureUsage {
 	trigger: 'automatic' | 'on_demand' | 'none';
@@ -12,103 +15,119 @@ export interface FeatureUsage {
 
 interface FeatureLabelProps {
 	label: string;
-	stability?: string | undefined;
-}
-
-interface FeatureHelpProps {
-	description?: React.ReactNode;
 	usage?: FeatureUsage | null | undefined;
 }
 
+interface FeatureHelpProps {
+	label: string;
+	description?: React.ReactNode;
+	usage?: FeatureUsage | null | undefined;
+	docsUrl?: string | undefined;
+}
+
 /**
- * Renders a feature toggle label with a stability badge for non-stable items.
+ * Renders a feature toggle label, flagging features that run without a user action.
  *
- * @param {FeatureLabelProps} props           The component props.
- * @param {string}            props.label     The feature label.
- * @param {string}            props.stability The feature stability level.
+ * @param {FeatureLabelProps} props       The component props.
+ * @param {string}            props.label The feature label.
+ * @param {FeatureUsage}      props.usage The feature usage metadata.
  * @return {React.JSX.Element} The label.
  */
 export function FeatureLabel( {
 	label,
-	stability,
+	usage,
 }: FeatureLabelProps ): React.JSX.Element {
-	let badge = '';
-	if ( stability === 'experimental' ) {
-		badge = __( 'Experimental', 'ai' );
-	} else if ( stability === 'deprecated' ) {
-		badge = __( 'Deprecated', 'ai' );
-	}
-
 	return (
 		<>
 			{ label }
-			{ badge && ' ' }
-			{ badge && (
-				<span
-					className={ `ai-feature-badge ai-feature-badge--${ stability }` }
-				>
-					{ badge }
-				</span>
+			{ usage?.trigger === 'automatic' && (
+				<>
+					{ ' ' }
+					<span className="ai-feature-badge">
+						{ __( 'Runs automatically', 'ai' ) }
+					</span>
+				</>
 			) }
 		</>
 	);
 }
 
 /**
- * Renders a feature description followed by when it runs, what it sends,
- * and how many requests it makes.
+ * Renders a feature description with an info button that shows when the
+ * feature runs, what it sends, and how many requests it makes.
  *
  * @param {FeatureHelpProps} props             The component props.
+ * @param {string}           props.label       The feature label.
  * @param {React.ReactNode}  props.description The feature description.
  * @param {FeatureUsage}     props.usage       The feature usage metadata.
+ * @param {string}           props.docsUrl     URL of the feature's documentation.
  * @return {React.JSX.Element} The help text.
  */
 export function FeatureHelp( {
+	label,
 	description,
 	usage,
+	docsUrl,
 }: FeatureHelpProps ): React.JSX.Element {
+	const [ anchor, setAnchor ] = useState< HTMLElement | null >( null );
+	const [ isOpen, setIsOpen ] = useState( false );
+
 	const facts = usage
 		? [
+				{ label: __( 'When it runs', 'ai' ), value: usage.runs },
 				{
-					key: 'runs',
-					label: __( 'When it runs', 'ai' ),
-					value: usage.runs,
-				},
-				{
-					key: 'sends',
-					label: __( 'What it sends', 'ai' ),
+					label: __( 'Sent to your AI provider', 'ai' ),
 					value: usage.sends,
 				},
-				{
-					key: 'requests',
-					label: __( 'AI requests', 'ai' ),
-					value: usage.requests,
-				},
+				{ label: __( 'Requests', 'ai' ), value: usage.requests },
 		  ].filter( ( fact ) => fact.value !== '' )
 		: [];
 
+	if ( facts.length === 0 ) {
+		return <>{ description }</>;
+	}
+
 	return (
 		<>
-			{ description }
-			{ facts.length > 0 && (
-				<span className="ai-feature-usage">
-					{ facts.map( ( fact ) => (
-						<span
-							key={ fact.key }
-							className={
-								fact.key === 'runs' &&
-								usage?.trigger === 'automatic'
-									? 'ai-feature-usage__item ai-feature-usage__item--automatic'
-									: 'ai-feature-usage__item'
-							}
-						>
-							<span className="screen-reader-text">
-								{ fact.label }:{ ' ' }
-							</span>
-							{ fact.value }
-						</span>
-					) ) }
-				</span>
+			{ description }{ ' ' }
+			<Button
+				ref={ setAnchor }
+				className="ai-feature-usage-toggle"
+				icon={ infoIcon }
+				size="small"
+				label={ sprintf(
+					/* translators: %s: Feature or experiment name. */
+					__( 'When %s runs and what it sends', 'ai' ),
+					label
+				) }
+				aria-expanded={ isOpen }
+				onClick={ () => setIsOpen( ( open ) => ! open ) }
+			/>
+			{ isOpen && (
+				<Popover
+					anchor={ anchor }
+					className="ai-feature-usage-popover"
+					placement="bottom-start"
+					focusOnMount="firstElement"
+					onClose={ () => setIsOpen( false ) }
+				>
+					<dl className="ai-feature-usage">
+						{ facts.map( ( fact ) => (
+							<div
+								key={ fact.label }
+								className="ai-feature-usage__item"
+							>
+								<dt>{ fact.label }</dt>
+								<dd>{ fact.value }</dd>
+							</div>
+						) ) }
+					</dl>
+					{ docsUrl && (
+						<ExternalLink href={ docsUrl }>
+							{ __( 'Learn more', 'ai' ) }
+						</ExternalLink>
+					) }
+				</Popover>
 			) }
 		</>
 	);

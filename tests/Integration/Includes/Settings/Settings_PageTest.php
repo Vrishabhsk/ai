@@ -307,6 +307,7 @@ class Settings_PageTest extends WP_UnitTestCase {
 		$this->assertSame( Experiment_Category::EDITOR, $feature['category'] );
 		$this->assertSame( 'text_generation', $feature['capability'] );
 		$this->assertSame( array(), $feature['usage'] );
+		$this->assertSame( '', $feature['docsUrl'], 'Features registered outside the plugin should not link to its docs' );
 
 		$group = $result['groups'][0];
 		$this->assertSame( Experiment_Category::EDITOR, $group['id'] );

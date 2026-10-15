@@ -82,6 +82,7 @@ interface FeatureData {
 	image: string;
 	capability: string;
 	usage: FeatureUsage | null;
+	docsUrl: string;
 }
 
 interface PageData {
@@ -163,6 +164,7 @@ function parseFeature( value: unknown ): FeatureData | null {
 		image: toStringValue( feature.image ),
 		capability: toStringValue( feature.capability ) || 'text_generation',
 		usage: parseFeatureUsage( feature.usage ),
+		docsUrl: toStringValue( feature.docsUrl ),
 	};
 }
 
@@ -198,10 +200,7 @@ function buildFallbackFeatureGroups(
 				: getDefaultLabel( category ),
 		description:
 			category === 'other'
-				? __(
-						'Additional AI-powered features. Items marked Experimental may change or be removed in any release.',
-						'ai'
-				  )
+				? __( 'Additional AI-powered features.', 'ai' )
 				: '',
 	} ) );
 }
@@ -577,13 +576,15 @@ function FeatureToggleWithSettings( {
 				label={
 					<FeatureLabel
 						label={ field.label }
-						stability={ feature?.stability }
+						usage={ feature?.usage }
 					/>
 				}
 				help={
 					<FeatureHelp
+						label={ field.label }
 						description={ field.description }
 						usage={ feature?.usage }
+						docsUrl={ feature?.docsUrl }
 					/>
 				}
 				checked={ checked }
@@ -633,7 +634,7 @@ function VisualCardToggle( {
 					label={
 						<FeatureLabel
 							label={ field.label }
-							stability={ feature?.stability }
+							usage={ feature?.usage }
 						/>
 					}
 					checked={ checked }
@@ -642,8 +643,10 @@ function VisualCardToggle( {
 					}
 					help={
 						<FeatureHelp
+							label={ field.label }
 							description={ field.description }
 							usage={ feature?.usage }
+							docsUrl={ feature?.docsUrl }
 						/>
 					}
 				/>
@@ -726,6 +729,7 @@ function AISettingsPage() {
 					image: '',
 					capability: 'text_generation',
 					usage: null,
+					docsUrl: '',
 				} );
 				return acc;
 			}, [] );
@@ -850,15 +854,15 @@ function AISettingsPage() {
 			} else {
 				const featureId = feature.id;
 				const featureCapability = feature.capability;
-				const featureStability = feature.stability;
 				const featureUsage = feature.usage;
+				const featureDocsUrl = feature.docsUrl;
 				baseField.Edit = ( props ) => (
 					<FeatureToggle
 						{ ...props }
 						featureId={ featureId }
 						capability={ featureCapability }
-						stability={ featureStability }
 						usage={ featureUsage }
+						docsUrl={ featureDocsUrl }
 					/>
 				);
 			}

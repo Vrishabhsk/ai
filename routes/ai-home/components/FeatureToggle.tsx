@@ -24,8 +24,8 @@ type AISettings = Record< string, boolean >;
 type FeatureToggleProps = DataFormControlProps< AISettings > & {
 	featureId?: string;
 	capability?: string;
-	stability?: string;
 	usage?: FeatureUsage | null;
+	docsUrl?: string;
 };
 
 interface ConnectorApprovalState {
@@ -46,8 +46,8 @@ const AI_PLUGIN = 'ai/ai.php';
  * @param {Function}           props.onChange   The function to call when the value changes.
  * @param {string}             props.featureId  The feature ID.
  * @param {string}             props.capability The AI capability type for model filtering.
- * @param {string}             props.stability  The feature stability level.
  * @param {FeatureUsage}       props.usage      When the feature runs, what it sends, and how many requests it makes.
+ * @param {string}             props.docsUrl    URL of the feature's documentation.
  * @return {React.JSX.Element} The component.
  */
 export function FeatureToggle( {
@@ -56,8 +56,8 @@ export function FeatureToggle( {
 	onChange,
 	featureId,
 	capability = 'text_generation',
-	stability,
 	usage,
+	docsUrl,
 }: FeatureToggleProps ): React.JSX.Element {
 	const checked = !! field.getValue( { item: data } );
 	const isDeveloperMode = useDeveloperModeContext();
@@ -110,16 +110,13 @@ export function FeatureToggle( {
 	return (
 		<>
 			<ToggleControl
-				label={
-					<FeatureLabel
-						label={ field.label }
-						stability={ stability }
-					/>
-				}
+				label={ <FeatureLabel label={ field.label } usage={ usage } /> }
 				help={
 					<FeatureHelp
+						label={ field.label }
 						description={ field.description }
 						usage={ usage }
+						docsUrl={ docsUrl }
 					/>
 				}
 				checked={ checked }
