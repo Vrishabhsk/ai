@@ -119,7 +119,11 @@ abstract class Terms_Ability_TestCase extends WP_UnitTestCase {
 				continue;
 			}
 
-			unset( $object->show_in_abilities );
+			if ( property_exists( \WP_Post_Type::class, 'show_in_abilities' ) ) {
+				$object->show_in_abilities = true;
+			} else {
+				unset( $object->show_in_abilities );
+			}
 		}
 
 		wp_set_current_user( 0 );
