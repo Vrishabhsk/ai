@@ -142,6 +142,41 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests that registering initial settings for abilities does not pollute $new_allowed_options.
+	 *
+	 * @since 1.4.0
+	 */
+	public function test_register_preserves_new_allowed_options(): void {
+		global $new_allowed_options;
+
+		$prev_actions_count  = $GLOBALS['wp_actions']['rest_api_init'] ?? null;
+		$prev_allowed_backup = $new_allowed_options;
+		unset( $GLOBALS['wp_actions']['rest_api_init'] );
+
+		// Simulate an existing custom setting already in $new_allowed_options.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Simulating WordPress core global.
+		$new_allowed_options = array(
+			'general' => array( 'my_custom_option' ),
+		);
+
+		try {
+			$this->register_ability();
+
+			// 'admin_email' must NOT be in $new_allowed_options['general'].
+			$this->assertNotContains( 'admin_email', $new_allowed_options['general'] );
+			// Prior allowed options must be preserved.
+			$this->assertContains( 'my_custom_option', $new_allowed_options['general'] );
+		} finally {
+			$new_allowed_options = $prev_allowed_backup; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Restoring the WordPress test global.
+			if ( null === $prev_actions_count ) {
+				unset( $GLOBALS['wp_actions']['rest_api_init'] );
+			} else {
+				$GLOBALS['wp_actions']['rest_api_init'] = $prev_actions_count; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restoring the WordPress test global.
+			}
+		}
+	}
+
+	/**
 	 * The ability is registered in the `site` category and flagged read-only.
 	 *
 	 * @since 1.1.0
@@ -154,6 +189,7 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( WP_Ability::class, $ability );
 		$this->assertSame( 'core/settings-get', $ability->get_name() );
 		$this->assertSame( 'site', $ability->get_category() );
+		$this->assertTrue( $ability->get_meta_item( 'public', false ) );
 		$this->assertTrue( $ability->get_meta_item( 'show_in_rest', false ) );
 
 		$annotations = $ability->get_meta_item( 'annotations', array() );
@@ -330,7 +366,7 @@ class SettingsTest extends WP_UnitTestCase {
 	/**
 	 * The old `core/read-settings` name is kept as a deprecated alias.
 	 *
-	 * @since x.x.x
+	 * @since 1.4.0
 	 */
 	public function test_registers_deprecated_read_settings_alias(): void {
 		$this->register_ability();
@@ -347,7 +383,7 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertTrue( $alias->get_meta_item( 'show_in_rest', false ), 'The alias should stay exposed over REST.' );
 		$this->assertSame(
 			array(
-				'since'       => 'x.x.x',
+				'since'       => '1.4.0',
 				'replacement' => 'core/settings-get',
 			),
 			$alias->get_meta_item( 'deprecated' ),
@@ -358,7 +394,7 @@ class SettingsTest extends WP_UnitTestCase {
 	/**
 	 * Executing the deprecated alias forwards to `core/settings-get` and notifies.
 	 *
-	 * @since x.x.x
+	 * @since 1.4.0
 	 */
 	public function test_deprecated_read_settings_alias_forwards_to_settings_get(): void {
 		$this->setExpectedDeprecated( 'core/read-settings' );
@@ -375,7 +411,7 @@ class SettingsTest extends WP_UnitTestCase {
 	/**
 	 * The deprecated alias fails closed for users without `manage_options`.
 	 *
-	 * @since x.x.x
+	 * @since 1.4.0
 	 */
 	public function test_deprecated_read_settings_alias_forwards_permission_check(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );

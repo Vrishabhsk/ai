@@ -64,7 +64,7 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 		}
 		$this->registered_options = array();
 
-		// Restore the curated post types and taxonomies to their unmarked state.
+		// Restore the curated post types and taxonomies: marked once core declares the flag, unmarked before.
 		foreach ( $this->data_object_kinds() as [ $kind ] ) {
 			foreach ( $kind['curated'] as $name ) {
 				$object = $kind['get']( $name );
@@ -72,7 +72,11 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 					continue;
 				}
 
-				unset( $object->show_in_abilities );
+				if ( $this->core_declares_object_flag( $kind ) ) {
+					$object->show_in_abilities = true;
+				} else {
+					unset( $object->show_in_abilities );
+				}
 			}
 		}
 
@@ -94,11 +98,60 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Checks whether WordPress core declares the setting flag natively.
+	 *
+	 * @since x.x.x
+	 *
+	 * @return bool True when core declares show_in_abilities in register_setting defaults.
+	 */
+	private function core_declares_setting_flag(): bool {
+		static $declared = null;
+
+		if ( null !== $declared ) {
+			return $declared;
+		}
+
+		$captured = null;
+		$spy      = static function ( $args, $defaults ) use ( &$captured ) {
+			$captured = $defaults;
+			return $args;
+		};
+
+		add_filter( 'register_setting_args', $spy, 1, 2 );
+		try {
+			register_setting( 'wpai_probe_group', 'wpai_probe_setting', array( 'type' => 'string' ) );
+		} finally {
+			remove_filter( 'register_setting_args', $spy, 1 );
+			unregister_setting( 'wpai_probe_group', 'wpai_probe_setting' );
+		}
+
+		$declared = is_array( $captured ) && array_key_exists( 'show_in_abilities', $captured );
+
+		return $declared;
+	}
+
+	/**
+	 * Checks whether WordPress core declares the flag natively for an object kind.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param array<string, mixed> $kind The object kind.
+	 * @return bool True when core declares show_in_abilities on the kind's class.
+	 */
+	private function core_declares_object_flag( array $kind ): bool {
+		return property_exists( $kind['class'], 'show_in_abilities' );
+	}
+
+	/**
 	 * A curated setting is flagged with `show_in_abilities => true`.
 	 *
 	 * @since 1.1.0
 	 */
 	public function test_marks_curated_boolean_setting(): void {
+		if ( $this->core_declares_setting_flag() ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		$this->register_setting( 'general', 'blogname', array( 'type' => 'string' ) );
 
 		$settings = get_registered_settings();
@@ -112,6 +165,10 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @since 1.1.0
 	 */
 	public function test_marks_curated_array_setting(): void {
+		if ( $this->core_declares_setting_flag() ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		$this->register_setting( 'discussion', 'default_comment_status', array( 'type' => 'string' ) );
 
 		$settings = get_registered_settings();
@@ -241,11 +298,15 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * Core does not declare the setting flag yet, so the polyfill is still needed.
 	 *
 	 * A tripwire. It reads the defaults core actually passes to the `register_setting_args`
-	 * filter, so it fails when core starts shipping the argument.
+	 * filter, and skips when core starts shipping the argument natively.
 	 *
 	 * @since 1.2.0
 	 */
 	public function test_core_does_not_yet_declare_the_setting_flag(): void {
+		if ( $this->core_declares_setting_flag() ) {
+			$this->markTestSkipped( 'Core now declares show_in_abilities natively; the polyfill has stood down.' );
+		}
+
 		$captured = null;
 		$spy      = static function ( $args, $defaults ) use ( &$captured ) {
 			$captured = $defaults;
@@ -314,6 +375,10 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $kind The object kind.
 	 */
 	public function test_marks_curated_registered_objects( array $kind ): void {
+		if ( $this->core_declares_object_flag( $kind ) ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		// $this->show_in_abilities->register() ran in setUp and patches existing objects.
 		foreach ( $kind['curated'] as $name ) {
 			$this->assertNotEmpty( $kind['get']( $name )->show_in_abilities );
@@ -331,6 +396,10 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $kind The object kind.
 	 */
 	public function test_filter_marks_curated_object( array $kind ): void {
+		if ( $this->core_declares_object_flag( $kind ) ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		foreach ( $kind['curated'] as $name ) {
 			$args = $this->show_in_abilities->{$kind['mark']}( array(), $name );
 
@@ -403,6 +472,10 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $kind The object kind.
 	 */
 	public function test_direct_patch_respects_explicit_false( array $kind ): void {
+		if ( $this->core_declares_object_flag( $kind ) ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		$name = $kind['curated'][0];
 
 		$kind['get']( $name )->show_in_abilities = false;
@@ -425,6 +498,10 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $kind The object kind.
 	 */
 	public function test_marks_curated_objects_registered_again( array $kind ): void {
+		if ( $this->core_declares_object_flag( $kind ) ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		$kind['register_again']();
 
 		foreach ( $kind['curated'] as $name ) {
@@ -449,6 +526,10 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @param array<string, mixed> $kind The object kind.
 	 */
 	public function test_core_does_not_yet_declare_the_object_flag( array $kind ): void {
+		if ( $this->core_declares_object_flag( $kind ) ) {
+			$this->markTestSkipped( 'Core now declares show_in_abilities natively; the polyfill has stood down.' );
+		}
+
 		$this->assertFalse(
 			property_exists( $kind['class'], 'show_in_abilities' ),
 			"Core now declares show_in_abilities on {$kind['class']}; the polyfill must step aside."
