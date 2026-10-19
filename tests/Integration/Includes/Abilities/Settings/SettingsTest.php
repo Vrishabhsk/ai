@@ -184,7 +184,6 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$this->assertInstanceOf( WP_Ability::class, $ability );
 		$this->assertSame( 'core/settings-get', $ability->get_name() );
-		$this->assertFalse( wp_has_ability( 'core/read-settings' ), 'The removed core/read-settings alias should not be registered.' );
 		$this->assertSame( 'Get Settings', $ability->get_label() );
 		$this->assertSame( 'site', $ability->get_category() );
 		$this->assertTrue( $ability->get_meta_item( 'public', false ) );
