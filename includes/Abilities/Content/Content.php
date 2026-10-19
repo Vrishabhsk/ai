@@ -19,8 +19,6 @@ use WP_Query;
 use WP_User;
 use stdClass;
 
-use function WordPress\AI\register_deprecated_ability_alias;
-
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
@@ -172,11 +170,9 @@ final class Content {
 	/**
 	 * Registers the read-only `core/content-query` ability.
 	 *
-	 * Also registers `core/read-content` as a deprecated alias.
-	 *
 	 * @since 1.2.0
 	 * @since 1.4.0 Renamed from `core/read-content`.
-	 * @since x.x.x Synced with WordPress core.
+	 * @since x.x.x Synced with WordPress core. The `core/read-content` alias is removed.
 	 */
 	private function register_content_query(): void {
 		/*
@@ -227,9 +223,6 @@ final class Content {
 				),
 			)
 		);
-
-		// Plugin: @todo Remove the alias after a few releases.
-		register_deprecated_ability_alias( 'core/read-content', 'core/content-query', '1.4.0' );
 	}
 
 	/**

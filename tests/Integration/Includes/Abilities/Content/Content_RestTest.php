@@ -107,10 +107,8 @@ class Content_RestTest extends WP_UnitTestCase {
 	 * @since x.x.x
 	 */
 	public function tearDown(): void {
-		foreach ( array( 'core/content-query', 'core/read-content' ) as $ability_name ) {
-			if ( wp_has_ability( $ability_name ) ) {
-				wp_unregister_ability( $ability_name );
-			}
+		if ( wp_has_ability( 'core/content-query' ) ) {
+			wp_unregister_ability( 'core/content-query' );
 		}
 
 		global $wp_rest_server;

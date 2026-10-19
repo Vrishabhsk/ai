@@ -159,10 +159,8 @@ class ContentTest extends WP_UnitTestCase {
 	public function setUp(): void {
 		parent::setUp();
 
-		foreach ( array( 'core/content-query', 'core/read-content' ) as $ability_name ) {
-			if ( wp_has_ability( $ability_name ) ) {
-				wp_unregister_ability( $ability_name );
-			}
+		if ( wp_has_ability( 'core/content-query' ) ) {
+			wp_unregister_ability( 'core/content-query' );
 		}
 
 		/*
@@ -201,10 +199,8 @@ class ContentTest extends WP_UnitTestCase {
 	 * @since x.x.x
 	 */
 	public function tearDown(): void {
-		foreach ( array( 'core/content-query', 'core/read-content' ) as $ability_name ) {
-			if ( wp_has_ability( $ability_name ) ) {
-				wp_unregister_ability( $ability_name );
-			}
+		if ( wp_has_ability( 'core/content-query' ) ) {
+			wp_unregister_ability( 'core/content-query' );
 		}
 
 		/*
@@ -361,83 +357,16 @@ class ContentTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The old `core/read-content` name is kept as a deprecated alias.
+	 * The removed `core/read-content` alias is not registered.
 	 *
 	 * Plugin: this test has no equivalent in the core tests.
 	 *
-	 * @since 1.4.0
+	 * @since x.x.x
 	 */
-	public function test_registers_deprecated_read_content_alias(): void {
+	public function test_removed_read_content_alias_is_not_registered(): void {
 		$this->register_ability();
 
-		$alias   = wp_get_ability( 'core/read-content' );
-		$current = wp_get_ability( 'core/content-query' );
-
-		$this->assertNotNull( $alias, 'The deprecated core/read-content alias should be registered.' );
-		$this->assertSame( 'Query Content (deprecated)', $alias->get_label(), 'The alias label should mark it as deprecated.' );
-		$this->assertStringContainsString( 'Use `core/content-query` instead.', $alias->get_description(), 'The alias description should name the replacement.' );
-		$this->assertSame( $current->get_category(), $alias->get_category(), 'The alias should share the replacement category.' );
-		$this->assertSame( $current->get_input_schema(), $alias->get_input_schema(), 'The alias should share the replacement input schema.' );
-		$this->assertSame( $current->get_output_schema(), $alias->get_output_schema(), 'The alias should share the replacement output schema.' );
-		$this->assertTrue( $alias->get_meta_item( 'show_in_rest', false ), 'The alias should stay exposed over REST.' );
-		$this->assertSame(
-			array(
-				'since'       => '1.4.0',
-				'replacement' => 'core/content-query',
-			),
-			$alias->get_meta_item( 'deprecated' ),
-			'The alias meta should describe the deprecation.'
-		);
-	}
-
-	/**
-	 * Executing the deprecated alias forwards to `core/content-query` and notifies.
-	 *
-	 * Plugin: this test has no equivalent in the core tests.
-	 *
-	 * @since 1.4.0
-	 */
-	public function test_deprecated_read_content_alias_forwards_to_content_query(): void {
-		$this->setExpectedDeprecated( 'core/read-content' );
-
-		$this->login_as( 'administrator' );
-		$this->register_ability();
-
-		$input = array(
-			'where' => array(
-				'type' => 'post',
-				'ids'  => array( self::$post_ids['published_content'] ),
-			),
-		);
-
-		$expected = wp_get_ability( 'core/content-query' )->execute( $input );
-		$result   = wp_get_ability( 'core/read-content' )->execute( $input );
-
-		$this->assertSame( $expected, $result, 'The alias should return the same result as the replacement ability.' );
-	}
-
-	/**
-	 * The deprecated alias fails closed for users without read access.
-	 *
-	 * Plugin: this test has no equivalent in the core tests.
-	 *
-	 * @since 1.4.0
-	 */
-	public function test_deprecated_read_content_alias_forwards_permission_check(): void {
-		wp_set_current_user( 0 );
-		$this->register_ability();
-
-		$result = wp_get_ability( 'core/read-content' )->execute(
-			array(
-				'where' => array(
-					'type' => 'post',
-					'ids'  => array( self::$post_ids['published_content'] ),
-				),
-			)
-		);
-
-		$this->assertWPError( $result, 'The alias should reject unauthenticated callers like the replacement does.' );
-		$this->assertSame( 'ability_invalid_permissions', $result->get_error_code(), 'The alias should use the invalid permissions error.' );
+		$this->assertFalse( wp_has_ability( 'core/read-content' ), 'The removed core/read-content alias should not be registered.' );
 	}
 
 	/**
