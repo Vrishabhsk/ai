@@ -366,17 +366,22 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * An explicit `show_in_abilities` value already on the post type is preserved.
+	 * A `show_in_abilities` value other than `true` is stored as `false`, as in core.
 	 *
 	 * @since 1.2.0
+	 * @since x.x.x Values other than `true` are stored as `false`.
 	 */
-	public function test_filter_respects_existing_post_type_value(): void {
+	public function test_filter_stores_a_value_other_than_true_as_false(): void {
+		if ( $this->core_declares_post_type_flag() ) {
+			$this->markTestSkipped( 'Core declares show_in_abilities natively; the polyfill stands down.' );
+		}
+
 		$args = $this->show_in_abilities->mark_post_type(
 			array( 'show_in_abilities' => array( 'custom' => true ) ),
 			'post'
 		);
 
-		$this->assertSame( array( 'custom' => true ), $args['show_in_abilities'] );
+		$this->assertFalse( $args['show_in_abilities'] );
 	}
 
 	/**

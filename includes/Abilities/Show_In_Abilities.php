@@ -133,9 +133,11 @@ final class Show_In_Abilities {
 	 *
 	 * Respects an explicit `show_in_abilities` value already present in the registration
 	 * arguments — including an explicit `false` opt-out — only filling it in when the key is
-	 * absent entirely. Does nothing once core declares the flag natively.
+	 * absent entirely. As core does, only `true` exposes a post type, so any other value is
+	 * stored as `false`. Does nothing once core declares the flag natively.
 	 *
 	 * @since 1.2.0
+	 * @since x.x.x Stores a value other than `true` as `false`, matching WordPress core.
 	 *
 	 * @param array<string, mixed> $args      The post type registration arguments.
 	 * @param string               $post_type The post type key.
@@ -150,6 +152,11 @@ final class Show_In_Abilities {
 
 		if ( isset( $post_types[ $post_type ] ) && ! array_key_exists( 'show_in_abilities', $args ) ) {
 			$args['show_in_abilities'] = $post_types[ $post_type ];
+		}
+
+		// Only `true` exposes the post type, so other values, such as arrays, can be given a meaning later.
+		if ( array_key_exists( 'show_in_abilities', $args ) ) {
+			$args['show_in_abilities'] = true === $args['show_in_abilities'];
 		}
 
 		return $args;
@@ -190,13 +197,12 @@ final class Show_In_Abilities {
 	/**
 	 * Returns the curated core post types to expose, keyed by post type key.
 	 *
-	 * The value is whatever `show_in_abilities` should contain: `true`, or an array
-	 * reserved for enabling specific operations in the future. This matches the set
-	 * marked natively by the core `core/content-query` implementation (`post` and `page`).
+	 * Only `true` exposes a post type, as in core. This matches the set marked natively by
+	 * WordPress core (`post` and `page`).
 	 *
 	 * @since 1.2.0
 	 *
-	 * @return array<string, bool|array<string, mixed>> Post types map keyed by post type key.
+	 * @return array<string, bool> Post types map keyed by post type key.
 	 */
 	private function post_types_map(): array {
 		return array(
