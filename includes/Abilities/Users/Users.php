@@ -15,8 +15,6 @@ use WP_Error;
 use WP_User;
 use WP_User_Query;
 
-use function WordPress\AI\register_deprecated_ability_alias;
-
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
@@ -140,11 +138,9 @@ final class Users {
 	 * Unlike `core/get-user-info`, which only returns the current user's own profile,
 	 * this ability is generic and reads any user the current user is allowed to see.
 	 *
-	 * Also registers `core/read-users` as a deprecated alias.
-	 *
 	 * @since 1.2.0
 	 * @since 1.4.0 Renamed from `core/read-users`.
-	 * @since x.x.x Synced with WordPress core.
+	 * @since x.x.x Synced with WordPress core. The `core/read-users` alias is removed.
 	 */
 	private function register_users_query(): void {
 		// Plugin: unregister any core-provided copy first so the plugin's version wins.
@@ -178,9 +174,6 @@ final class Users {
 				),
 			)
 		);
-
-		// Plugin: @todo Remove the alias after a few releases.
-		register_deprecated_ability_alias( 'core/read-users', 'core/users-query', '1.4.0' );
 	}
 
 	/**
