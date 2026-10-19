@@ -50,11 +50,12 @@ final class Show_In_Abilities {
 	public function register(): void {
 		add_filter( 'register_setting_args', array( $this, 'mark_setting' ), 10, 4 );
 		add_filter( 'register_post_type_args', array( $this, 'mark_post_type' ), 10, 2 );
+		add_action( 'registered_post_type', array( $this, 'normalize_post_type' ), 0, 2 );
 
 		/*
 		 * Core post types (post, page) are registered very early — during bootstrap and on
 		 * `init` priority 0 — which is typically before this component runs, so the filter
-		 * above would miss them. Mark any already-registered curated post types directly.
+		 * above would miss them. Mark curated types and normalize existing post types directly.
 		 */
 		$this->mark_registered_post_types();
 	}
@@ -133,11 +134,10 @@ final class Show_In_Abilities {
 	 *
 	 * Respects an explicit `show_in_abilities` value already present in the registration
 	 * arguments — including an explicit `false` opt-out — only filling it in when the key is
-	 * absent entirely. As core does, only `true` exposes a post type, so any other value is
-	 * stored as `false`. Does nothing once core declares the flag natively.
+	 * absent entirely. Normalization happens after registration filters have run, in
+	 * {@see self::normalize_post_type()}. Does nothing once core declares the flag natively.
 	 *
 	 * @since 1.2.0
-	 * @since x.x.x Stores a value other than `true` as `false`, matching WordPress core.
 	 *
 	 * @param array<string, mixed> $args      The post type registration arguments.
 	 * @param string               $post_type The post type key.
@@ -154,43 +154,51 @@ final class Show_In_Abilities {
 			$args['show_in_abilities'] = $post_types[ $post_type ];
 		}
 
-		// Only `true` exposes the post type, so other values, such as arrays, can be given a meaning later.
-		if ( array_key_exists( 'show_in_abilities', $args ) ) {
-			$args['show_in_abilities'] = true === $args['show_in_abilities'];
-		}
-
 		return $args;
 	}
 
 	/**
-	 * Marks already-registered curated post types as exposed to abilities.
+	 * Normalizes exposure after all post type registration argument filters have run.
 	 *
-	 * The `register_post_type_args` filter only affects post types registered after it is
-	 * added, but core post types are registered during bootstrap. This patches the existing
-	 * post type objects directly so the polyfill works regardless of when it runs.
-	 * {@see WP_Post_Type} allows dynamic properties, so this is safe on stock WordPress.
-	 * A `show_in_abilities` property already set on the object — including an explicit
-	 * `false` opt-out — is left untouched.
+	 * Core normalizes inside WP_Post_Type::set_props(), after both argument filters.
+	 * Older versions have no hook at that point, so normalize the registered object
+	 * before the usual registered_post_type callbacks inspect it.
 	 *
-	 * Both this method and {@see self::mark_post_type()} stand down once core declares the
-	 * flag, so the two exposure paths cannot disagree.
+	 * @since x.x.x
+	 *
+	 * @param string        $post_type        Post type key.
+	 * @param \WP_Post_Type $post_type_object Registered post type object.
+	 */
+	public function normalize_post_type( string $post_type, \WP_Post_Type $post_type_object ): void {
+		if ( $this->core_declares_post_type_flag() ) {
+			return;
+		}
+
+		$post_type_object->show_in_abilities = true === ( $post_type_object->show_in_abilities ?? false ); // @phpstan-ignore property.notFound (WP_Post_Type permits dynamic properties.)
+	}
+
+	/**
+	 * Marks curated post types and normalizes any types registered before the polyfill.
+	 *
+	 * Existing values, including explicit opt-outs, take precedence over curated defaults.
+	 * Only true exposes a post type, matching normalization during registration.
+	 * Does nothing once core declares the flag natively.
 	 *
 	 * @since 1.2.0
+	 * @since x.x.x Normalizes exposure for all already-registered post types.
 	 */
 	public function mark_registered_post_types(): void {
 		if ( $this->core_declares_post_type_flag() ) {
 			return;
 		}
 
-		foreach ( $this->post_types_map() as $post_type => $show ) {
-			$object = get_post_type_object( $post_type );
-
-			// The class does not declare the property, so this only matches a value already set.
-			if ( ! ( $object instanceof \WP_Post_Type ) || property_exists( $object, 'show_in_abilities' ) ) {
-				continue;
+		$post_types = $this->post_types_map();
+		foreach ( get_post_types( array(), 'objects' ) as $post_type => $object ) {
+			if ( isset( $post_types[ $post_type ] ) && ! property_exists( $object, 'show_in_abilities' ) ) {
+				$object->show_in_abilities = $post_types[ $post_type ]; // @phpstan-ignore property.notFound (WP_Post_Type permits dynamic properties.)
 			}
 
-			$object->show_in_abilities = $show; // @phpstan-ignore property.notFound (WP_Post_Type permits dynamic properties; core is expected to declare this one.)
+			$this->normalize_post_type( $post_type, $object );
 		}
 	}
 
