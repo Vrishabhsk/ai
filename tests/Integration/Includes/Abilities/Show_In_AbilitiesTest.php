@@ -384,7 +384,7 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * Both late global filters and post-type-specific filters are normalized.
 	 *
 	 * @since x.x.x
-	 * @dataProvider post_type_exposure_provider
+	 * @dataProvider data_post_type_exposure
 	 *
 	 * @param string $hook     Registration argument filter.
 	 * @param mixed  $value    Final filter value.
@@ -416,7 +416,7 @@ class Show_In_AbilitiesTest extends WP_UnitTestCase {
 	 * @since x.x.x
 	 * @return array<string, array<mixed>> Test cases.
 	 */
-	public static function post_type_exposure_provider(): array {
+	public static function data_post_type_exposure(): array {
 		$cases = array();
 		foreach ( array( 'register_post_type_args', 'register_ai_exposure_probe_post_type_args' ) as $hook ) {
 			foreach ( array( true, false, 1, 'true', array( 'query' => true ), null ) as $index => $value ) {
