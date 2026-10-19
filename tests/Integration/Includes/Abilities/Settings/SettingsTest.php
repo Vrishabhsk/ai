@@ -62,12 +62,8 @@ class SettingsTest extends WP_UnitTestCase {
 	 * @since 1.1.0
 	 */
 	public function tearDown(): void {
-		foreach ( array( 'core/settings-get', 'core/read-settings' ) as $ability_name ) {
-			if ( ! wp_has_ability( $ability_name ) ) {
-				continue;
-			}
-
-			wp_unregister_ability( $ability_name );
+		if ( wp_has_ability( 'core/settings-get' ) ) {
+			wp_unregister_ability( 'core/settings-get' );
 		}
 
 		remove_filter( 'register_setting_args', array( $this->show_in_abilities, 'mark_setting' ), 10 );
@@ -188,6 +184,7 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$this->assertInstanceOf( WP_Ability::class, $ability );
 		$this->assertSame( 'core/settings-get', $ability->get_name() );
+		$this->assertFalse( wp_has_ability( 'core/read-settings' ), 'The removed core/read-settings alias should not be registered.' );
 		$this->assertSame( 'Get Settings', $ability->get_label() );
 		$this->assertSame( 'site', $ability->get_category() );
 		$this->assertTrue( $ability->get_meta_item( 'public', false ) );
@@ -387,7 +384,6 @@ class SettingsTest extends WP_UnitTestCase {
 			$this->register_ability();
 
 			$this->assertFalse( wp_has_ability( 'core/settings-get' ), 'The settings ability should not be registered when no setting is exposed.' );
-			$this->assertFalse( wp_has_ability( 'core/read-settings' ), 'The deprecated alias should not be registered when no setting is exposed.' );
 		} finally {
 			$wp_registered_settings = $registered_settings_backup; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Restoring the WordPress test global.
 			if ( null === $rest_api_init_count ) {
@@ -719,65 +715,5 @@ class SettingsTest extends WP_UnitTestCase {
 		} finally {
 			unregister_setting( 'general', $option );
 		}
-	}
-
-	/**
-	 * The old `core/read-settings` name is kept as a deprecated alias.
-	 *
-	 * @since 1.4.0
-	 */
-	public function test_registers_deprecated_read_settings_alias(): void {
-		$this->register_ability();
-
-		$alias   = wp_get_ability( 'core/read-settings' );
-		$current = wp_get_ability( 'core/settings-get' );
-
-		$this->assertInstanceOf( WP_Ability::class, $alias, 'The deprecated core/read-settings alias should be registered.' );
-		$this->assertSame( 'Get Settings (deprecated)', $alias->get_label(), 'The alias label should mark it as deprecated.' );
-		$this->assertStringContainsString( 'Use `core/settings-get` instead.', $alias->get_description(), 'The alias description should name the replacement.' );
-		$this->assertSame( $current->get_category(), $alias->get_category(), 'The alias should share the replacement category.' );
-		$this->assertSame( $current->get_input_schema(), $alias->get_input_schema(), 'The alias should share the replacement input schema.' );
-		$this->assertSame( $current->get_output_schema(), $alias->get_output_schema(), 'The alias should share the replacement output schema.' );
-		$this->assertTrue( $alias->get_meta_item( 'show_in_rest', false ), 'The alias should stay exposed over REST.' );
-		$this->assertSame(
-			array(
-				'since'       => '1.4.0',
-				'replacement' => 'core/settings-get',
-			),
-			$alias->get_meta_item( 'deprecated' ),
-			'The alias meta should describe the deprecation.'
-		);
-	}
-
-	/**
-	 * Executing the deprecated alias forwards to `core/settings-get` and notifies.
-	 *
-	 * @since 1.4.0
-	 */
-	public function test_deprecated_read_settings_alias_forwards_to_settings_get(): void {
-		$this->setExpectedDeprecated( 'core/read-settings' );
-
-		$this->become_admin();
-		$this->register_ability();
-
-		$expected = wp_get_ability( 'core/settings-get' )->execute( array( 'fields' => array( 'title' ) ) );
-		$result   = wp_get_ability( 'core/read-settings' )->execute( array( 'fields' => array( 'title' ) ) );
-
-		$this->assertSame( $expected, $result, 'The alias should return the same result as the replacement ability.' );
-	}
-
-	/**
-	 * The deprecated alias fails closed for users without `manage_options`.
-	 *
-	 * @since 1.4.0
-	 */
-	public function test_deprecated_read_settings_alias_forwards_permission_check(): void {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
-		$this->register_ability();
-
-		$result = wp_get_ability( 'core/read-settings' )->execute( array() );
-
-		$this->assertWPError( $result, 'The alias should reject users without manage_options like the replacement does.' );
-		$this->assertSame( 'ability_invalid_permissions', $result->get_error_code(), 'The alias should use the invalid permissions error.' );
 	}
 }

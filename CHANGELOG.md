@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file, per [the Ke
 
 ## [Unreleased] - TBD
 
+### Removed
+- Removed the deprecated `core/read-settings` ability alias. Use `core/settings-get` with REST API field names (for example, `title` instead of `blogname`). The alias no longer preserved the old field names or response contract after syncing with WordPress core ([#1206](https://github.com/WordPress/ai/pull/1206)).
+
 ## [1.4.0] - 2026-10-05
 ### Added
 - When comment moderation is run, calculate a value score, providing a relevance signal (0–1) for each comment based on how substantive and on-topic it is relative to the post it was left on. Show this score in a new column on the comment screen ([#681](https://github.com/WordPress/ai/pull/681)).

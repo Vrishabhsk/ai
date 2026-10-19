@@ -11,8 +11,6 @@ declare( strict_types=1 );
 
 namespace WordPress\AI\Abilities\Settings;
 
-use function WordPress\AI\register_deprecated_ability_alias;
-
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
 
@@ -137,8 +135,6 @@ final class Settings {
 	/**
 	 * Registers the read-only `core/settings-get` ability.
 	 *
-	 * Also registers `core/read-settings` as a deprecated alias.
-	 *
 	 * @since 1.1.0
 	 * @since 1.4.0 Renamed from `core/read-settings`.
 	 */
@@ -171,9 +167,6 @@ final class Settings {
 				),
 			)
 		);
-
-		// Plugin: @todo Remove the alias after a few releases.
-		register_deprecated_ability_alias( 'core/read-settings', 'core/settings-get', '1.4.0' );
 	}
 
 	/**
