@@ -57,6 +57,7 @@ Experiments marked "runs automatically" can send requests to your AI provider wi
 * **Key Encryption** – Encrypts AI provider API keys stored in your database. Disabling the experiment or deactivating the plugin restores plaintext keys.
 * **Markdown Feeds** – Publishes a Markdown feed and Markdown versions of your public posts and pages for AI agents and other machine readers.
 * **Meta Description Generation** – Generates meta description suggestions and integrates them with several SEO plugins.
+* **Revision Change Summary** – Summarizes what changed between two revisions of a post in plain language, on the visual and classic revisions screens.
 * **Slug Generation** – Suggests SEO-friendly permalink slugs from the permalink popover or the pre-publish panel.
 * **Suggest Reply** – Adds a "Suggest Reply" action to the Comments screen and Activity widget to draft replies to comments.
 * **Title Generation** – Generates title suggestions for your posts.
