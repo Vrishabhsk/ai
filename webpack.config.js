@@ -145,6 +145,11 @@ module.exports = {
 			'src/experiments/content-translation',
 			'index.tsx'
 		),
+		'experiments/site-agent': path.resolve(
+			process.cwd(),
+			'src/experiments/site-agent',
+			'index.tsx'
+		),
 	},
 
 	plugins: [
